@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
 import { writeFile } from 'fs/promises';
+import fs from 'fs';
 
 const baseUrl = 'https://demo.openemr.io/openemr';
 
@@ -32,7 +33,7 @@ const baseUrl = 'https://demo.openemr.io/openemr';
       break;
     }
   }
-
+  
   await page.waitForSelector('iframe[name="pat"]');
   const frameHandle = await page.$('iframe[name="pat"]');
   const frame = await frameHandle.contentFrame();
@@ -45,45 +46,37 @@ const baseUrl = 'https://demo.openemr.io/openemr';
     }
   });
   await new Promise(resolve => setTimeout(resolve, 500));
-
   await frame.click('#search');
-  console.log('Botão clicado!');
 
-  await frame.waitForFunction(() => {
-    const firstRow = document.querySelector('tr.oneresult');
-    return firstRow && firstRow.querySelectorAll('td').length > 6;
-  }, { timeout: 10000 });
+  console.log('Botão clicado');
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  console.log('Tabela carregada');
 
-  await frame.evaluate(() => {
-    const table = document.querySelector('table');
-    if (table) {
-      table.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Extrair do iframe
+  const rows = await frame.$$('#searchResults tr.oneresult');
+  const extractedData = [];
+
+  for (const row of rows) {
+    const tdsHandles = await row.$$('td');
+//Essa parte tá errada
+    if (tdsHandles.length >= 7) {
+      const name = await tdsHandles[0].evaluate(td => td.innerText.trim());
+      const dob = await tdsHandles[5].evaluate(td => td.innerText.trim());
+      const patientID = await tdsHandles[6].evaluate(td => td.innerText.trim());
+
+      if (name && dob && patientID) {
+        extractedData.push({ name, dob, patientID });
+      }
     }
+  }
+
+  console.log('Dados extraídos:', extractedData);
+
+  // Salva os dados
+  fs.writeFile('./data/extractedData.json', JSON.stringify(extractedData, null, 2), (err) => {
+    if (err) throw err;
+    console.log('Arquivo salvo com sucesso!');
   });
-
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  const patients = await frame.$$eval('tr.oneresult', (rows) => {
-    return rows
-      .map(row => {
-        const tds = row.querySelectorAll('td');
-        if (tds.length >= 7) {
-          return {
-            name: tds[0].innerText.trim(),
-            dob: tds[4].innerText.trim(),
-            patientId: tds[6].innerText.trim(),
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
-  });
-
-  console.log('Dados extraídos:', patients);
-
-  // Salva em JSON
-  await writeFile('./data/patients.json', JSON.stringify(patients, null, 2));
-  console.log('Dados salvos em ./data/patients.json');
 
   await browser.close();
 })();
