@@ -73,7 +73,7 @@ const baseUrl = 'https://demo.openemr.io/openemr';
   console.log('Dados extraídos:', extractedData);
 
   // Salva os dados
-  fs.writeFile('./data/extractedData.json', JSON.stringify(extractedData, null, 2), (err) => {
+  fs.writeFile('./data/patients.json', JSON.stringify(extractedData, null, 2), (err) => {
     if (err) throw err;
     console.log('Arquivo salvo com sucesso!');
   });
