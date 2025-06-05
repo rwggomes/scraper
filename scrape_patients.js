@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import { writeFile } from 'fs/promises'; //deixei aqui porque o homem do usou pra retornar os dados
+import { writeFile } from 'fs/promises';
 
 const baseUrl = 'https://demo.openemr.io/openemr';
 
@@ -7,12 +7,11 @@ const baseUrl = 'https://demo.openemr.io/openemr';
   const browser = await puppeteer.launch({
     headless: false,
     defaultViewport: null,
-    args: ['--start-maximized'] //Senão o menu fica escondido
-  },
-  );
-//Login
+    args: ['--start-maximized']
+  });
+
   const page = await browser.newPage();
-  await page.goto(baseUrl)
+  await page.goto(baseUrl);
   await page.waitForSelector('#authUser');
   await page.type('#authUser', 'admin', { delay: 100 });
   await page.type('#clearPass', 'pass', { delay: 100 });
@@ -22,66 +21,69 @@ const baseUrl = 'https://demo.openemr.io/openemr';
   await page.waitForSelector('div.oe-dropdown-toggle');
   await page.click('div.oe-dropdown-toggle');
 
-  // Espera o menu abrir
   await page.waitForSelector('.menuEntries li');
   const items = await page.$$('.menuEntries li');
 
-  await items[1].click(); // segundo item
+  await items[1].click();
   for (const item of items) {
     const text = await page.evaluate(el => el.textContent.trim(), item);
     if (text === 'New/Search') {
       await item.click();
       break;
     }
-  } 
- 
+  }
 
-  // o meu código era:
-  //  await page.waitForSelector('#search');
-  // await page.click('#search');, mas o #search não aparecia 
+  await page.waitForSelector('iframe[name="pat"]');
+  const frameHandle = await page.$('iframe[name="pat"]');
+  const frame = await frameHandle.contentFrame();
 
+  await frame.waitForSelector('#search');
+  await frame.evaluate(() => {
+    const btn = document.querySelector('#search');
+    if (btn) {
+      btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+  await new Promise(resolve => setTimeout(resolve, 500));
 
-  //Daqui pra frente é GPT 
-  
-  // Aguarda até o iframe estar presente no DOM
-  await page.waitForFunction(() => {
-    return document.querySelector('#framesDisplay > div:nth-child(3) > iframe');
-  }, { timeout: 30000 });
+  await frame.click('#search');
+  console.log('Botão clicado!');
 
-  // Pega o iframe com evaluateHandle (sem usar $)
-  const iframeHandle = await page.evaluateHandle(() => {
-    return document.querySelector('#framesDisplay > div:nth-child(3) > iframe');
+  await frame.waitForFunction(() => {
+    const firstRow = document.querySelector('tr.oneresult');
+    return firstRow && firstRow.querySelectorAll('td').length > 6;
+  }, { timeout: 10000 });
+
+  await frame.evaluate(() => {
+    const table = document.querySelector('table');
+    if (table) {
+      table.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   });
 
-  const elementHandle = iframeHandle.asElement();
-  const frame = await elementHandle.contentFrame();
+  await new Promise(resolve => setTimeout(resolve, 500));
 
-  if (!frame) {
-    throw new Error('Não foi possível acessar o conteúdo do iframe.');
-  }
+  const patients = await frame.$$eval('tr.oneresult', (rows) => {
+    return rows
+      .map(row => {
+        const tds = row.querySelectorAll('td');
+        if (tds.length >= 7) {
+          return {
+            name: tds[0].innerText.trim(),
+            dob: tds[4].innerText.trim(),
+            patientId: tds[6].innerText.trim(),
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  });
 
-  // Tenta encontrar o botão #search dentro do iframe até 10 vezes
-  let searchButtonFound = false;
-  for (let i = 0; i < 10; i++) {
-    const found = await frame.evaluate(() => {
-      return !!document.querySelector('#search');
-    });
+  console.log('Dados extraídos:', patients);
 
-    if (found) {
-      searchButtonFound = true;
-      break;
-    }
-
-    await page.waitForTimeout(1000); // espera 1 segundo e tenta novamente
-  }
-
-  if (!searchButtonFound) {
-    throw new Error('O botão #search não apareceu dentro do iframe.');
-  }
-
-  // Aguarda o botão ficar visível e clica
-  await frame.waitForSelector('#search', { visible: true });
-  await frame.click('#search');
+  // Salva em JSON
+  await writeFile('./data/patients.json', JSON.stringify(patients, null, 2));
+  console.log('Dados salvos em ./data/patients.json');
 
   await browser.close();
 })();
