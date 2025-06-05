@@ -1,6 +1,6 @@
 
 
-````markdown
+
 # OpenEMR Patient Scraper
 
 This script automates the login and extraction of patient data from the OpenEMR demo system using [Puppeteer](https://pptr.dev/), a Node.js library for browser automation.
@@ -10,8 +10,7 @@ This script automates the login and extraction of patient data from the OpenEMR 
 ## Prerequisites
 
 - Node.js v16 or higher
-- Internet connection (to access the OpenEMR demo environment)
-- Chromium browser (automatically installed by Puppeteer)
+
 
 ---
 
