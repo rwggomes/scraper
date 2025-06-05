@@ -19,7 +19,7 @@ This script automates the login and extraction of patient data from the OpenEMR 
 Clone this repository (or copy the required files), open a terminal in the project directory, and run:
 
 ```bash
-npm install puppeteer
+npm install
 ````
 
 ---
