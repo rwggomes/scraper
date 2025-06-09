@@ -61,7 +61,7 @@ const baseUrl = 'https://demo.openemr.io/openemr';
   // Step 4: Wait for the results inside that modal iframe
   await modalFrame.waitForSelector('tr.oneresult', { timeout: 5000 });
 
-  console.log('✅ Patient search results found.');
+  console.log('Resultados da busca.');
   
   // Step 5: Extract data from the table rows
   const rows = await modalFrame.$$('#searchResults tr.oneresult'); 
