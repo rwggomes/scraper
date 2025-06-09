@@ -66,20 +66,18 @@ const baseUrl = 'https://demo.openemr.io/openemr';
   // Step 5: Extract data from the table rows
   const rows = await modalFrame.$$('#searchResults tr.oneresult'); 
   
-  console.log(Encontradas ${rows.length} linhas na tabela.);
+  console.log(`Encontradas ${rows.length} linhas na tabela.`);
   const extractedData = [];
 
   for (const row of rows) {
     const tdsHandles = await row.$$('td');
-    //Essa parte tá errada
-    if (tdsHandles.length >= 7) {
+    if (tdsHandles.length >= 6) {
       const name = await tdsHandles[0].evaluate(td => td.innerText.trim());
-      const dob = await tdsHandles[5].evaluate(td => td.innerText.trim());
-      const patientID = await tdsHandles[6].evaluate(td => td.innerText.trim());
+      const phoneNumber = await tdsHandles[2].evaluate(td => td.innerText.trim());
+      const dob = await tdsHandles[4].evaluate(td => td.innerText.trim());
+      const patientID = await tdsHandles[5].evaluate(td => td.innerText.trim());
 
-      if (name && dob && patientID) {
-        extractedData.push({ name, dob, patientID });
-      }
+      extractedData.push({ name, phoneNumber, dob, patientID });
     }
   }
 
