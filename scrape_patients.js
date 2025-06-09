@@ -64,8 +64,7 @@ const baseUrl = 'https://demo.openemr.io/openemr';
   await frame.click('#search');
 
   // Log status and take a screenshot for debugging purposes
-  console.log('Botão clicado, aguardando tabela...');
-  await page.screenshot({ path: './data/debug_fallback.png', fullPage: true });
+  console.log('Button clicked, waiting for results...');
 
   // Wait for the modal iframe that displays the search results to load
   await page.waitForSelector('iframe#modalframe', { visible: true });
@@ -80,7 +79,7 @@ const baseUrl = 'https://demo.openemr.io/openemr';
 
   // Step 5: Get all rows with class 'oneresult' from the search result table
   const rows = await modalFrame.$$('#searchResults tr.oneresult');
-  console.log(`Encontradas ${rows.length} linhas na tabela.`);
+  console.log(`Found ${rows.length} rows on the table.`);
 
   const extractedData = [];
 
@@ -101,12 +100,12 @@ const baseUrl = 'https://demo.openemr.io/openemr';
     }
   }
 
-  console.log('Dados extraídos:', extractedData);
+  console.log('Extracted data:', extractedData);
 
   // Save the extracted data to a JSON file
   fs.writeFile('./data/patients.json', JSON.stringify(extractedData, null, 2), (err) => {
     if (err) throw err;
-    console.log('Arquivo salvo com sucesso!');
+    console.log('File saved!');
   });
 
   // Close the browser session
