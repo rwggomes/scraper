@@ -1,1 +1,4 @@
 node_modules/
+maybe_good.js
+data/*.png
+*.png
